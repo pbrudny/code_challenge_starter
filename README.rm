@@ -19,7 +19,8 @@ This is a program which parses a cron string and expands each field to show the 
 
 You can test parser using Minitest.
 
-  $ ruby test/cron_parser_test.rb
+  $ ruby test/display_test.rb
+  $ ruby test/parse_test.rb
 
 ## Copyright
 

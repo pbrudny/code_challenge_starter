@@ -67,7 +67,7 @@ module CronParser
     def command_result
       return 'invalid' unless valid?
 
-      '/usr/bin/find'
+      cron_expression.split[5..20].join(' ')
     end
 
     private
