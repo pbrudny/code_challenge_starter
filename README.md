@@ -3,9 +3,10 @@
 This is a program which parses a cron string and expands each field to show the times at which it will run.
 
 ## Setup
-### Install Ruby 2.7.0
+*  Install Ruby 2.7.0
 
-### Install Bundler
+*  Install Bundler
+
   $ gem install bundler
 
 ### Install gems
