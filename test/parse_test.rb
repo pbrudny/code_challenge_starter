@@ -2,93 +2,43 @@ require_relative 'test_helper'
 require_relative '../lib/parse'
 
 describe CronParser::Parse do
-  def parse(expression, command = '/usr/bin/find')
-    CronParser::Parse.new("#{expression} #{command}")
+  def parse(value, top)
+    CronParser::Parse.new(value, top).call
   end
 
-  describe 'when initialized with valid cron expression' do
-    describe 'sample expression' do
-      before { @result = parse('*/15 0 1,15 * 1-5') }
-
-      # it { _(@result.minute_result).must_equal('0 15 30 45') }
-      # it { _(@result.hour_result).must_equal('0') }
-      # it { _(@result.day_of_month_result).must_equal('1 15') }
-      it { _(@result.month_result).must_equal('1 2 3 4 5 6 7 8 9 10 11 12') }
-      it { _(@result.day_of_week_result).must_equal('1 2 3 4 5') }
-      # it { _(@result.command_result).must_equal('/usr/bin/find') }
-      # it { _(@result.output).must_match(/minute        0 15 30 45\nhour          0\nday of month  1 15\nmonth         1 2 3 4 5 6 7 8 9 10 11 12\nday of week   1 2 3 4 5\ncommand       \/usr\/bin\/find/) }
-    end
-
-    # describe 'every minute' do
-    #   before { @result = parse('* * ? * *') }
-    #
-    #   it { _(@result.minute_result).must_equal('0 15 30 45') }
-    #   it { _(@result.hour_result).must_equal('0') }
-    #   it { _(@result.day_of_month_result).must_equal('1 15') }
-    #   it { _(@result.month_result).must_equal('1 2 3 4 5 6 7 8 9 10 11 12') }
-    #   it { _(@result.day_of_week_result).must_equal('1 2 3 4 5') }
-    #   it { _(@result.command_result).must_equal('/usr/bin/find') }
-    # end
-
-    # describe 'every even minute' do
-    #   before { @result = parse('*/2 * ? * *') }
-    #
-    #   it { _(@result.minute_result).must_equal('0 15 30 45') }
-    #   it { _(@result.hour_result).must_equal('0') }
-    #   it { _(@result.day_of_month_result).must_equal('1 15') }
-    #   it { _(@result.month_result).must_equal('1 2 3 4 5 6 7 8 9 10 11 12') }
-    #   it { _(@result.day_of_week_result).must_equal('1 2 3 4 5') }
-    #   it { _(@result.command_result).must_equal('/usr/bin/find') }
-    # end
-
-    # describe 'every uneven minute' do
-    #   before { @result = parse('1/2 * ? * *') }
-    #
-    #   it { _(@result.minute_result).must_equal('0 15 30 45') }
-    #   it { _(@result.hour_result).must_equal('0') }
-    #   it { _(@result.day_of_month_result).must_equal('1 15') }
-    #   it { _(@result.month_result).must_equal('1 2 3 4 5 6 7 8 9 10 11 12') }
-    #   it { _(@result.day_of_week_result).must_equal('1 2 3 4 5') }
-    #   it { _(@result.command_result).must_equal('/usr/bin/find') }
-    # end
+  describe 'all' do
+    it { _(parse('*', 5)).must_equal('1 2 3 4 5') }
+    it { _(parse('?', 5)).must_equal('1 2 3 4 5') }
+    it { _(parse('**', 5)).must_equal('invalid cron expression') }
   end
 
-  describe 'when initialized with invalid cron expression' do
-    describe 'empty string' do
-      before { @result = parse('','') }
+  describe 'single number' do
+    it { _(parse('1', 5)).must_equal('1') }
+    it { _(parse('6', 5)).must_equal('invalid cron expression') }
+    it { _(parse('-1', 5)).must_equal('invalid cron expression') }
+  end
 
-      it { _(@result.minute_result).must_equal('invalid') }
-      it { _(@result.hour_result).must_equal('invalid') }
-      it { _(@result.day_of_month_result).must_equal('invalid') }
-      it { _(@result.month_result).must_equal('invalid') }
-      it { _(@result.day_of_week_result).must_equal('invalid') }
-      it { _(@result.command_result).must_equal('invalid') }
-      it { _(@result.output).must_match(/invalid cron expression/) }
-    end
+  describe 'comma separated numbers ' do
+    it { _(parse('1,2', 5)).must_equal('1 2') }
+    it { _(parse('1,5,10', 10)).must_equal('1 5 10') }
+    it { _(parse('1,2,5,10,23', 23)).must_equal('1 2 5 10 23') }
+    it { _(parse('1,5,10', 5)).must_equal('invalid cron expression') }
+    it { _(parse('1,x,10', 5)).must_equal('invalid cron expression') }
+  end
 
-    describe 'too many arguments' do
-      before { @result = parse('* * * ? * *') }
-      it { _(@result.output).must_match(/invalid cron expression/) }
-    end
+  describe 'skip numbers' do
+    it { _(parse('*/1', 5)).must_equal('0 1 2 3 4 5') }
+    it { _(parse('1/2', 5)).must_equal('1 3 5') }
+    it { _(parse('3/5', 23)).must_equal('3 8 13 18 23') }
+    it { _(parse('10/5', 23)).must_equal('10 15 20') }
+    it { _(parse('10/5', 23)).must_equal('10 15 20') }
+  end
 
-    describe 'not enough arguments' do
-      before { @result = parse('* * * ?') }
-      it { _(@result.output).must_match(/invalid cron expression/) }
-    end
-
-    describe 'both week and month days' do
-      before { @result = parse('* * * * *') }
-      it { _(@result.output).must_match(/invalid cron expression/) }
-    end
-
-    # describe 'not allowed numeric values' do
-    #   before { @result = parse('0 24 * * ?') }
-    #   it { _(@result.output).must_match(/invalid cron expression/) }
-    # end
-
-    describe 'not allowed special characters' do
-      before { @result = parse('0 23 * * _') }
-      it { _(@result.output).must_match(/invalid cron expression/) }
-    end
+  describe 'range' do
+    it { _(parse('1-2', 5)).must_equal('1 2') }
+    it { _(parse('1-5', 5)).must_equal('1 2 3 4 5') }
+    it { _(parse('1-6', 5)).must_equal('invalid cron expression') }
+    it { _(parse('1-1', 5)).must_equal('invalid cron expression') }
+    it { _(parse('2-1', 5)).must_equal('invalid cron expression') }
   end
 end
