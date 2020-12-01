@@ -3,25 +3,26 @@
 This is a program which parses a cron string and expands each field to show the times at which it will run.
 
 ## Setup
-*  Install Ruby 2.7.0
+- Install Ruby 2.7.0
 
-*  Install Bundler
+- Install Bundler
 
-  $ gem install bundler
+  `$ gem install bundler`
 
 ### Install gems
-  $ bundle install
+
+  `$ bundle install`
 
 ## Running
 
-  $ ruby cron_parser.rb "*/15 0 1,15 * 1-5 /usr/bin/find"
+  `$ ruby cron_parser.rb "*/15 0 1,15 * 1-5 /usr/bin/find"`
 
 ## Testing
 
 You can test parser using Minitest.
 
-  $ ruby test/display_test.rb
-  $ ruby test/parse_test.rb
+  `$ ruby test/display_test.rb`
+  `$ ruby test/parse_test.rb`
 
 ## Copyright
 
