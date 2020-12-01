@@ -1,8 +1,9 @@
 require 'pry'
 require_relative '../lib/validator'
+require_relative '../lib/parse'
 
 module CronParser
-  class Parse
+  class Display
     def initialize(cron_expression)
       self.cron_expression = cron_expression
     end
@@ -24,63 +25,8 @@ module CronParser
       false
     end
 
-    def all_values(top)
-      (1..top).to_a.join(' ')
-    end
-
-    def range_values(range)
-      numbers = range.split('-')
-      (numbers[0].to_i..numbers[1].to_i).to_a.join(' ')
-    end
-
-    def skip_numbers?(value, top)
-      args = value.split('/')
-      args.count == 2 &&
-        (args[0] == '*' || numeric?(args[0]) && args[0].to_i < top) &&
-        numeric?(args[1]) && args[1].to_i < top
-    end
-
-    def numeric_with_commas?(value, top)
-      numbers = value.split(',')
-      numbers.count > 1 && numbers.all? { |n| numeric?(n) }
-    end
-
-    def numeric_values(value)
-      value.split(',').join(' ')
-    end
-
-    def skip_values(value, top)
-      args = value.split('/')
-      i = args[0] == '*' ? 0 : args[0].to_i
-
-      result = []
-      while i <= top
-        result << i
-        i = i + args[1].to_i
-      end
-      result.join(' ')
-    end
-
-    def range?(value, top)
-      numbers = value.split('-')
-      numbers.count == 2 && numbers[0].to_i < numbers[1].to_i && numbers[1].to_i <= top
-    end
-
     def parse(value, top)
-      # binding.pry if top == 23
-      if value == '*'
-        all_values(top)
-      elsif skip_numbers?(value, top)
-        skip_values(value, top)
-      elsif numeric?(value) && value.to_i < top
-        value
-      elsif numeric_with_commas?(value, top)
-        numeric_values(value)
-      elsif range?(value, top)
-        range_values(value)
-      else
-        'invalid cron expression'
-      end
+      CronParser::Parse.new(value, top).call
     end
 
     def minute_result
@@ -122,10 +68,6 @@ module CronParser
       return 'invalid' unless valid?
 
       '/usr/bin/find'
-    end
-
-    def numeric?(value)
-      true if Float(value) rescue false
     end
 
     private
