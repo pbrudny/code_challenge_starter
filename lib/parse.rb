@@ -3,44 +3,18 @@ require_relative '../lib/validator'
 
 module CronParser
   class Parse
-    def initialize(cron_expression)
-      self.cron_expression = cron_expression
+    def initialize(value, top)
+      self.value = value
+      self.top = top
     end
 
-    def output
-      return 'invalid cron expression' unless valid?
-
-      "#{format('minute')}" + "#{minute_result}\n"\
-      "#{format('hour')}" + "#{hour_result}\n"\
-      "#{format('day of month')}" + "#{day_of_month_result}\n"\
-      "#{format('month')}" + "#{month_result}\n"\
-      "#{format('day of week')}" + "#{day_of_week_result}\n"\
-      "#{format('command')}" + "#{command_result}"
-    end
-
-    def valid?
-      CronParser::Validator.new(cron_expression).call
-    rescue
-      false
-    end
-
-    def minute_result
-      return 'invalid' unless valid?
-
-      minute = cron_expression.split[0]
-
-      # '0 15 30 45'
-
-      # star - every possible option
-      # given values comma separated
-      # range (1-5)
-      # skip every */10
-      if minute == '*'
-        all_values(59)
-      end
-      # else if minute.match(//)
-      # end
-
+    def call
+      return all_values(top) if value == '*' || value == '?'
+      return skip_values(value, top) if skip_numbers?(value, top)
+      return value if numeric?(value) && value.to_i < top && value.to_i >= 0
+      return numeric_values(value) if numeric_with_commas?(value, top)
+      return range_values(value) if range?(value, top)
+      'invalid cron expression'
     end
 
     def all_values(top)
@@ -52,50 +26,45 @@ module CronParser
       (numbers[0].to_i..numbers[1].to_i).to_a.join(' ')
     end
 
+    def skip_numbers?(value, top)
+      args = value.split('/')
+      args.count == 2 &&
+        (args[0] == '*' || numeric?(args[0]) && args[0].to_i < top) &&
+        numeric?(args[1]) && args[1].to_i < top
+    end
+
+    def numeric_with_commas?(value, top)
+      numbers = value.split(',')
+      numbers.count > 1 && numbers.all? { |n| numeric?(n) && n.to_i <= top }
+    end
+
+    def numeric_values(value)
+      value.split(',').join(' ')
+    end
+
+    def skip_values(value, top)
+      args = value.split('/')
+      i = args[0] == '*' ? 0 : args[0].to_i
+
+      result = []
+      while i <= top
+        result << i
+        i += args[1].to_i
+      end
+      result.join(' ')
+    end
+
     def range?(value, top)
       numbers = value.split('-')
-      numbers.count == 2 && numbers[0].to_i < numbers[1].to_i && numbers[1].to_i <= top
+      numbers.count == 2 &&
+        numeric?(numbers[0]) &&
+        numeric?(numbers[1]) &&
+        numbers[0].to_i < numbers[1].to_i &&
+        numbers[1].to_i <= top
     end
 
-    def hour_result
-      return 'invalid' unless valid?
-
-      hour = cron_expression.split.arg[1]
-
-      '0'
-    end
-
-    def day_of_month_result
-      return 'invalid' unless valid?
-
-      '1 15'
-    end
-
-    def month_result
-      return 'invalid' unless valid?
-      month = cron_expression.split[3]
-
-      if month == '*'
-        all_values(12)
-      end
-    end
-
-    def day_of_week_result
-      return 'invalid' unless valid?
-
-      dow = cron_expression.split[4]
-
-      if dow == '*'
-        all_values(31)
-      elsif range?(dow, 31)
-        range_values(dow)
-      end
-    end
-
-    def command_result
-      return 'invalid' unless valid?
-
-      '/usr/bin/find'
+    def numeric?(value)
+      true if Float(value) rescue false
     end
 
     private
@@ -104,6 +73,6 @@ module CronParser
       title.ljust(14, ' ')
     end
 
-    attr_accessor :cron_expression
+    attr_accessor :value, :top
   end
 end
