@@ -55,6 +55,7 @@ module CronParser
 
     private
 
-    attr_accessor :cron_expression, :args, :minute, :hour, :day_of_month, :month, :day_of_week
+    attr_accessor :cron_expression, :args, :minute,
+                  :hour, :day_of_month, :month, :day_of_week
   end
 end
